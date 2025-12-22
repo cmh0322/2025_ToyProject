@@ -1,240 +1,88 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vision-Guided Autonomous RC System</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #00adb5;
-            --bg-dark: #222831;
-            --bg-card: #393e46;
-            --text-light: #eeeeee;
-            --accent-color: #ffd369;
-        }
+<div align="center">
 
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
+# 🏎️ Vision-Guided Autonomous RC System
+### AI-Powered Target Tracking & Obstacle Avoidance via CAN Bus Network
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
+<p>
+  <img src="https://img.shields.io/badge/Raspberry%20Pi%204-A22846?style=for-the-badge&logo=raspberrypi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/ESP32--C3-E74C3C?style=for-the-badge&logo=espressif&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/TensorFlow%20Lite-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white"/>
+  <img src="https://img.shields.io/badge/CAN%20Bus-00529B?style=for-the-badge&logo=connectivity&logoColor=white"/>
+  <img src="https://img.shields.io/badge/FreeRTOS-00A4EF?style=for-the-badge&logo=compuware&logoColor=white"/>
+</p>
 
-        header {
-            text-align: center;
-            padding-bottom: 60px;
-            border-bottom: 2px solid var(--bg-card);
-        }
+<br/>
 
-        h1 {
-            font-size: 2.5rem;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+> **"지능형 시각 분석과 분산 제어의 결합"** <br/> 라즈베리파이의 AI 객체 탐지와 CAN 통신 기반 분산 처리를 활용한 자율 주행 RC 플랫폼
 
-        .subtitle {
-            font-size: 1.2rem;
-            color: var(--accent-color);
-            font-weight: 300;
-        }
+[데모 영상 보기(링크)] | [회로도 및 설계서(링크)]
 
-        .section {
-            margin-top: 60px;
-        }
-
-        h2 {
-            border-left: 5px solid var(--primary-color);
-            padding-left: 15px;
-            margin-bottom: 30px;
-            color: var(--primary-color);
-        }
-
-        /* 아키텍처 다이어그램 스타일 */
-        .architecture-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .card {
-            background-color: var(--bg-card);
-            padding: 25px;
-            border-radius: 12px;
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .card:hover {
-            transform: translateY(-10px);
-            border: 1px solid var(--primary-color);
-        }
-
-        .card i {
-            font-size: 2rem;
-            color: var(--accent-color);
-            margin-bottom: 15px;
-        }
-
-        .card h3 {
-            margin-top: 0;
-            color: var(--primary-color);
-        }
-
-        /* CAN 프로토콜 테이블 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: var(--bg-card);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--bg-dark);
-        }
-
-        th {
-            background-color: var(--primary-color);
-            color: var(--bg-dark);
-        }
-
-        tr:hover {
-            background-color: rgba(0, 173, 181, 0.1);
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            background-color: var(--primary-color);
-            color: var(--bg-dark);
-            margin-right: 5px;
-        }
-
-        .flow-container {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 80px;
-            padding: 20px;
-            font-size: 0.9rem;
-            color: #888;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <header>
-        <h1>Vision-Guided RC System</h1>
-        <p class="subtitle">Raspberry Pi AI Detection & Distributed CAN Control System</p>
-    </header>
-
-    <div class="section">
-        <h2><i class="fas fa-sitemap"></i> System Architecture</h2>
-        <div class="flow-container">
-            <p><strong>[Vision AP]</strong> ➔ (UART) ➔ <strong>[Master Node]</strong> ➔ (CAN BUS) ➔ <strong>[Slave Nodes]</strong></p>
-            
-        </div>
-        
-        <div class="architecture-grid">
-            <div class="card">
-                <i class="fas fa-eye"></i>
-                <h3>Vision AP (Pi)</h3>
-                <p>MobileNet V1 기반 객체 탐지 및 중앙 오차값 계산. 실시간 프레임 분석을 통해 주행 및 추적 데이터 생성.</p>
-                <span class="badge">Python</span> <span class="badge">TFLite</span>
-            </div>
-            <div class="card">
-                <i class="fas fa-microchip"></i>
-                <h3>Master (ESP8266)</h3>
-                <p>시스템의 게이트웨이. UART와 CAN 통신 간의 프로토콜 변환 및 명령 배분 담당.</p>
-                <span class="badge">Arduino</span> <span class="badge">CAN-Bus</span>
-            </div>
-            <div class="card">
-                <i class="fas fa-car-side"></i>
-                <h3>Move Slave (ESP32)</h3>
-                <p>FreeRTOS 기반 주행 엔진. 객체 추적 인력(Attractive)과 장애물 회피 척력(Repulsive)을 결합한 알고리즘.</p>
-                <span class="badge">FreeRTOS</span> <span class="badge">L298N</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2><i class="fas fa-network-wired"></i> Communication Protocol</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>CAN ID</th>
-                    <th>Node</th>
-                    <th>Description</th>
-                    <th>Data Format</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code>0x123</code></td>
-                    <td>Master → All</td>
-                    <td>Target Error & Detection Flag</td>
-                    <td>[Header][Err_X][Err_Y]</td>
-                </tr>
-                <tr>
-                    <td><code>0x124</code></td>
-                    <td>Track Node</td>
-                    <td>Servo Status & Feedback</td>
-                    <td>[Status][Pos_X][Pos_Y]</td>
-                </tr>
-                <tr>
-                    <td><code>0x125</code></td>
-                    <td>Detection Node</td>
-                    <td>Ultrasonic Sensor Distances</td>
-                    <td>[Flag][Back][Left][Right]</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="section">
-        <h2><i class="fas fa-cogs"></i> Key Modules</h2>
-        <div class="architecture-grid">
-            <div class="card" style="grid-column: span 1;">
-                <i class="fas fa-video"></i>
-                <h3>Target Tracking</h3>
-                <p>2축 서보 모터(Pan/Tilt)를 이용한 타겟 추적. 객체 유실 시 스캔 모드 자동 전환.</p>
-            </div>
-            <div class="card" style="grid-column: span 1;">
-                <i class="fas fa-shield-halved"></i>
-                <h3>Avoidance System</h3>
-                <p>3방향 초음파 센서 실시간 모니터링. 50cm 이내 장애물 감지 시 주행 궤적 강제 보정.</p>
-            </div>
-        </div>
-    </div>
-
-    <footer>
-        <p>&copy; 2025 Autonomous RC Project. Created for Embedded Engineering Portfolio.</p>
-    </footer>
 </div>
 
-</body>
-</html>
+---
+
+## 🏗️ System Architecture
+
+
+
+본 프로젝트는 연산과 제어의 역할을 명확히 분리하여 실시간성을 극대화했습니다.
+
+1. **Vision AP (Raspberry Pi)**: 
+    * MobileNet V1 TFLite 모델을 활용한 실시간 객체 탐지
+    * 화면 중앙과의 오차값($sx, sy$) 산출 및 UART 전송
+2. **Master Node (ESP8266)**: 
+    * UART(AP) ↔ CAN(Slaves) 데이터 게이트웨이
+    * 수신된 오차 데이터를 CAN ID `0x123` 프레임으로 변환 및 배분
+3. **Slave Nodes (ESP32/C3)**: 
+    * **Track**: 타겟 추적용 2축 Pan/Tilt 서보 모터 제어 (P-제어)
+    * **Detection**: 3방향 초음파 센서 실시간 장애물 모니터링
+    * **Move**: 인력-척력 알고리즘 기반 DC 모터 주행 (FreeRTOS 적용)
+
+---
+
+## 🧠 Core Algorithm: Potential Field
+
+타겟으로 향하는 **인력(Attractive)**과 장애물을 피하는 **척력(Repulsive)**을 벡터적으로 합산하여 최적의 조향각을 결정합니다.
+
+$$Steering = (Force_{target} \times K_{target}) + Force_{avoid}$$
+
+* **Target Tracking**: 오차값 $sx$가 커질수록 해당 방향으로 더 강한 인력 발생
+* **Obstacle Avoidance**: 초음파 센서 거리 50cm 이내 진입 시 장애물 반대 방향으로 급격한 척력 발생
+
+---
+
+## 🛠️ Tech Stack & Tools
+
+| Category | Technology Stack |
+| :--- | :--- |
+| **Vision (AP)** | `Python`, `TFLite`, `OpenCV`, `Picamera2` |
+| **Distributed** | `CAN Bus (MCP2515)`, `UART`, `SPI` |
+| **Embedded** | `ESP32-S3/C3`, `FreeRTOS`, `Arduino Core` |
+| **Actuators** | `DC Motors (L298N)`, `SG90 Servos` |
+
+---
+
+## 🚀 Getting Started
+
+1. **Clone the repository**
+    ```bash
+    git clone [https://github.com/username/vision-rc-system.git](https://github.com/username/vision-rc-system.git)
+    ```
+
+2. **Raspberry Pi Environment Setup**
+    ```bash
+    pip install tflite-runtime opencv-python pyserial
+    ```
+
+3. **Firmware Upload**
+    각 노드별 MCU에 맞는 `.ino` 파일을 빌드하여 업로드합니다.
+    * **Master**: `master.ino` (ESP8266)
+    * **Move**: `move_freertos.ino` (ESP32)
+    * **Track/Detect**: `slave_control.ino` (ESP32-C3)
+
+---
+
+<div align="center">
+  <p>&copy; 2025 Vision RC Project. 건국대학교 전기전자공학부 학사 프로젝트.</p>
+</div>
