@@ -1,3 +1,28 @@
+//To. Mr. Siyoung
+//
+//형님 프로젝트에 도움 주셔서 감사합니다!
+//일단 라베파에서  0 ~ 5단계로 나누어 봤고요?
+//0(제일 멀음) ~ 5(제일 가까움) 으로 했습니다.
+//나중에 필요하시면 단계 조절도 가능할 것 같아요!
+//
+//그리고 모터 제어 함수에 인자를 넘길 때 가중치 곱하는 부분도 업데이트 했습니다
+//out_L, out_R이 sx의 값에 따라 바뀌지 않습니까?
+//보통 sx값이 실질적으로 -30 ~ 30 사이에 머무릅니다.
+//이때 Out값의 공식이 아래와 같더군요..
+// OUT = |100 - 0.75sx| +1.5sx
+//즉, 모터에 전달되는 Out값은 100 ~ 122.5 사이에요. 참 시원찮죠?
+//그래서 공식을 새로 만들어 봤습니다~
+// NEWOUT = (OUT - 100) * 4 + 150           (OUT는 세 줄 위에 저 출력입니다)
+//이렇게 하면 OUT값이 100 ~ 122.5일 때, NEWOUT값은 150 ~ 250이 됩니다
+//함수에 입력하기 전에 -255 ~ 255 클램핑 할거니까 걱정 말으셔요
+//
+//Line 191에 가중치 추가 코드 있습니다
+//Line 234에 바운딩박스 레벨 반영 감속 로직 있습니다
+//바운딩박스 레벨 * 20만큼 감속해서 제어됩니다.
+//그러면 범위가 최대 150 ~ 255 -> 70 ~ 175가 되겠네요
+
+//라베파에서 패킷 전송할 때, data[2]에 바운딩박스 레벨 info만 담아주세요~!
+
 #include <SPI.h>
 #include <mcp2515.h>
 #include <Arduino.h>
@@ -69,12 +94,18 @@ struct SensorData {
     //라베파 카메라(ID: 0x124)
     int8_t vision_error_sx;         //-70 ~ 70
     bool detected;                  //0 ~ 1
+
+    //라베파 바운딩박스 크기 단계
+    uint8_t bbox_size_level;        //0 ~ 5
 };
 
 //(Task_Navigation -> Task_Motor_Drive)
 struct MotorCommand {
     int16_t out_L;
     int16_t out_R;
+
+    //바운딩박스 크기
+    uint8_t bbox_size_level;        //0 ~ 5
 };
 
 // Queue 핸들
@@ -84,7 +115,7 @@ QueueHandle_t xQueueMotorCommand;
 //Tasks
 void Task_Can_Rx(void* params){
     struct can_frame rxFrame;
-    SensorData localData = {400, 400, 400, 0, false};
+    SensorData localData = {400, 400, 400, 0, false, 0};
     
     Serial.println("can task");
     while(1){
@@ -92,16 +123,18 @@ void Task_Can_Rx(void* params){
             
             if(rxFrame.can_id == 0x123){ // 카메라 데이터
                 
-                Serial.printf("[@MASTER]ID: %x, Header: %d, sx: %d\n", rxFrame.can_id, (int8_t)rxFrame.data[0], (int8_t)rxFrame.data[1]);
+                Serial.printf("[@MASTER]ID: %x, Header: %d, sx: %d, bboxLevel: %d\n", rxFrame.can_id, (int8_t)rxFrame.data[0], (int8_t)rxFrame.data[1], (uint8+_t)rxFrame.data[2]);
 
                 bool is_detected = (rxFrame.data[0] == 1);
                 localData.detected = is_detected;
 
                 if(is_detected){
                     localData.vision_error_sx = (int8_t)rxFrame.data[1];
+                    localData.bbox_size_level = (uint8_t)rxFrame.data[2];
                 }
                 else{
                     localData.vision_error_sx = 0;
+                    localData.bbox_size_level = 0;
                 }
                 
                 xQueueSend(xQueueSensorData, &localData, 0);
@@ -122,7 +155,7 @@ void Task_Can_Rx(void* params){
 
 //주행 알고리즘
 void Task_Navigation(void* params){
-    SensorData receivedData = {400, 400, 400, 0, false};
+    SensorData receivedData = {400, 400, 400, 0, false, 0};
     MotorCommand motorCmd = {0, 0};
     
     while(1){
@@ -134,6 +167,7 @@ void Task_Navigation(void* params){
             uint16_t d_left = receivedData.dist_left;      // 타입 일관성
             uint16_t d_right = receivedData.dist_right;
             bool is_detected = receivedData.detected;
+            uint8_t bbox_level = receivedData.bbox_size_level;
 
             float out_L = 0.0f;
             float out_R = 0.0f;
@@ -160,6 +194,10 @@ void Task_Navigation(void* params){
                 float mix_L = current_speed + steering;
                 float mix_R = current_speed - steering;
 
+                //가중치 조정 - 새로 추가됨!
+                mix_L = (mix_L - 100) * 4.0f + 150.0f; 
+                mix_R = (mix_R - 100) * 4.0f + 150.0f; 
+
                 // 클램핑
                 if (mix_L > 255.0f) mix_L = 255.0f;
                 if (mix_L < -255.0f) mix_L = -255.0f;
@@ -169,6 +207,7 @@ void Task_Navigation(void* params){
 
                 out_L = mix_L;
                 out_R = mix_R;
+
             }
             else{// 객체 미감지 시 정지
                 out_L = 0.0f;
@@ -188,16 +227,21 @@ void Task_Navigation(void* params){
 
 //모터 구동
 void Task_Motor_Drive(void* params){
-    MotorCommand motorCmd = {0, 0};  // 초기값 명시
+    MotorCommand motorCmd = {0, 0, 0};  // 초기값 명시
     
     while(1){
       // Serial.println("Motor");
         // Queue에서 모터 명령 수신
         if(xQueueReceive(xQueueMotorCommand, &motorCmd, portMAX_DELAY) == pdTRUE){
             // 모터 제어
+            //바운딩박스 레벨 제어
+
+            motorCmd.out_L -= motorCmd.bbox_size_level * 20;
+            motorCmd.out_R -= motorCmd.bbox_size_level * 20;
+
             Serial.printf("outL: %d, outR: %d\n", motorCmd.out_L, motorCmd.out_R);
 
-            controlMotor(motorCmd.out_L + 75, motorCmd.out_R + 75);
+            controlMotor(motorCmd.out_L, motorCmd.out_R);
         }
     }
 }
