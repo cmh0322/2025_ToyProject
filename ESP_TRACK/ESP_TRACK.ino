@@ -11,7 +11,7 @@
 #define PIN_CS    7
 
 // 서보 핀 (SPI와 절대 겹치면 안 됨!)
-const int H_SERVO_PIN = 2;  // 수평 서보
+const int H_SERVO_PIN = 1;  // 수평 서보
 const int V_SERVO_PIN = 3;  // 수직 서보
 
 Servo horizontal_servo;
@@ -23,7 +23,7 @@ struct can_frame txFrame;
 
 // 기준 각도 (초기값)
 float base_hori = 96.0f;
-float base_vert = 150.0f;
+float base_vert = 130.0f;
 
 float hori = 96.0f;
 float vert = 150.0f;
@@ -156,7 +156,7 @@ void loop() {
       }
     }
   }else{
-    Serial.println("FAILED TO RX CAN");
+    //Serial.println("FAILED TO RX CAN");
   }
   // ============================
   // 2) 제어 루프: 20ms 주기

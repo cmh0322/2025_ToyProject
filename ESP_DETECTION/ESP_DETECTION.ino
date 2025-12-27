@@ -49,8 +49,8 @@ inline void IRAM_ATTR echo_isr_common(int idx){
   portEXIT_CRITICAL_ISR(&echoMux);
 }
 
-void IRAM_ATTR echo_isr_0() { echo_isr_common(0); }
 void IRAM_ATTR echo_isr_1() { echo_isr_common(1); }
+void IRAM_ATTR echo_isr_0() { echo_isr_common(0); }
 void IRAM_ATTR echo_isr_2() { echo_isr_common(2); }
 
 void setup() {
@@ -59,7 +59,8 @@ void setup() {
 
     Serial.println("\n=== CAN Transmitter : Protocol Logic Applied ===");
 
-    SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, PIN_CS);
+    // SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI, PIN_CS);/
+    SPI.begin();
 
     mcp2515.reset();
     mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);

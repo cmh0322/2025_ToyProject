@@ -61,10 +61,10 @@ void loop() {
 
         MCP2515::ERROR txErr = mcp2515.sendMessage(&txFrame);
         if (txErr == MCP2515::ERROR_OK) {
-            Serial.print("[MASTER] TX CMD 0x124: header=");
-            Serial.print(txFrame.data[0]);
+            Serial.print("[MASTER] TX CMD 0x123: header=");
+            Serial.print((int8_t)txFrame.data[0]);
             Serial.print(", sx=");
-            Serial.print(txFrame.data[1]);
+            Serial.print((int8_t)txFrame.data[1]);
             Serial.print(", sy=");
             Serial.println(txFrame.data[2]);
         } else {
@@ -94,7 +94,7 @@ void loop() {
                 int16_t result_x = (int16_t)(rxFrame.data[0] | (rxFrame.data[1] << 8));
                 int16_t result_y = (int16_t)(rxFrame.data[2] | (rxFrame.data[3] << 8));
 
-                Serial.print("[MASTER] RX RESP 0x123: result_x=");
+                Serial.print("[MASTER] RX RESP 0x124: result_x=");
                 Serial.print(result_x);
                 Serial.print(", result_y=");
                 Serial.println(result_y);

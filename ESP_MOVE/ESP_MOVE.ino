@@ -32,22 +32,22 @@ MCP2515 mcp2515(PIN_CS);
 void controlMotor(int16_t t_L, int16_t t_R){
     if(t_L < 0){
       analogWrite(LEFT_EN, (uint8_t)(-t_L));  // 명확한 부호 반전
-      digitalWrite(LEFT_PINS[0], HIGH);
-      digitalWrite(LEFT_PINS[1], LOW);
-    }else{
-      analogWrite(LEFT_EN, (uint8_t)t_L);
       digitalWrite(LEFT_PINS[0], LOW);
       digitalWrite(LEFT_PINS[1], HIGH);
+    }else{
+      analogWrite(LEFT_EN, (uint8_t)t_L);
+      digitalWrite(LEFT_PINS[0], HIGH);
+      digitalWrite(LEFT_PINS[1], LOW);
     }
 
     if(t_R < 0){
       analogWrite(RIGHT_EN, (uint8_t)(-t_R));  // 명확한 부호 반전
-      digitalWrite(RIGHT_PINS[0], HIGH);
-      digitalWrite(RIGHT_PINS[1], LOW);
-    }else{
-      analogWrite(RIGHT_EN, (uint8_t)t_R);
       digitalWrite(RIGHT_PINS[0], LOW);
       digitalWrite(RIGHT_PINS[1], HIGH);
+    }else{
+      analogWrite(RIGHT_EN, (uint8_t)t_R);
+      digitalWrite(RIGHT_PINS[0], HIGH);
+      digitalWrite(RIGHT_PINS[1], LOW);
     }
 }
 
@@ -107,11 +107,11 @@ void Task_Can_Rx(void* params){
                 xQueueSend(xQueueSensorData, &localData, 0);
             }
             else if(rxFrame.can_id == 0x125){   //초음파센서 데이터
-                localData.dist_left  = (rxFrame.data[2] << 8) | rxFrame.data[3];
-                localData.dist_right = (rxFrame.data[4] << 8) | rxFrame.data[5];
-                localData.dist_back  = (rxFrame.data[6] << 8) | rxFrame.data[7];
+                localData.dist_back  = (rxFrame.data[2] << 8) | rxFrame.data[3];
+                localData.dist_left = (rxFrame.data[4] << 8) | rxFrame.data[5];
+                localData.dist_right  = (rxFrame.data[6] << 8) | rxFrame.data[7];
 
-                Serial.printf("[@DETECT]ID: %x, dist_left: %d, dist_right: %d, dist_back: %d\n", rxFrame.can_id, localData.dist_left, localData.dist_right, localData.dist_back);
+                Serial.printf("[@DETECT]ID: %x, dist_left: %3d, dist_right: %3d, dist_back: %3d\n", rxFrame.can_id, localData.dist_left, localData.dist_right, localData.dist_back);
                 
                 xQueueSend(xQueueSensorData, &localData, 0);
             }
@@ -128,7 +128,8 @@ void Task_Navigation(void* params){
     while(1){
         // Queue에서 센서 데이터 수신
         if(xQueueReceive(xQueueSensorData, &receivedData, portMAX_DELAY) == pdTRUE){
-            
+            Serial.printf("sx: %d, dl: %d, dr: %d, det: %d\n", 
+            receivedData.vision_error_sx, receivedData.dist_left, receivedData.dist_right, receivedData.detected);
             int8_t sx = receivedData.vision_error_sx;
             uint16_t d_left = receivedData.dist_left;      // 타입 일관성
             uint16_t d_right = receivedData.dist_right;
@@ -178,7 +179,8 @@ void Task_Navigation(void* params){
             // float → int16_t 변환 (이미 ±255 범위로 제한되어 안전)
             motorCmd.out_L = (int16_t)out_L;
             motorCmd.out_R = (int16_t)out_R;
-            
+            Serial.printf("outL: %d, outR: %d\n", 
+            motorCmd.out_L, motorCmd.out_R);
             xQueueSend(xQueueMotorCommand, &motorCmd, 0);
         }
     }
@@ -189,16 +191,14 @@ void Task_Motor_Drive(void* params){
     MotorCommand motorCmd = {0, 0};  // 초기값 명시
     
     while(1){
+      // Serial.println("Motor");
         // Queue에서 모터 명령 수신
-        //if(xQueueReceive(xQueueMotorCommand, &motorCmd, portMAX_DELAY) == pdTRUE){
+        if(xQueueReceive(xQueueMotorCommand, &motorCmd, portMAX_DELAY) == pdTRUE){
             // 모터 제어
+            Serial.printf("outL: %d, outR: %d\n", motorCmd.out_L, motorCmd.out_R);
 
-            //디버깅용
-            motorCmd.out_L = 255;
-            motorCmd.out_R = 0;
-
-            controlMotor(motorCmd.out_L, motorCmd.out_R);
-        //}
+            controlMotor(motorCmd.out_L + 75, motorCmd.out_R + 75);
+        }
     }
 }
 
@@ -228,33 +228,9 @@ void setup(){
     xQueueMotorCommand = xQueueCreate(3, sizeof(MotorCommand));
 
     //디버깅용
-    //xTaskCreatePinnedToCore(
-    //    Task_Can_Rx,
-    //    "Can_Rx",
-    //    4096,
-    //    NULL,
-    //    3,
-    //    NULL,
-    //    app_cpu
-    //);
-    //xTaskCreatePinnedToCore(
-    //    Task_Navigation,
-    //    "Navigation",
-    //    4096,
-    //    NULL,
-    //    2,
-    //    NULL,
-    //    app_cpu
-    //);
-    xTaskCreatePinnedToCore(
-        Task_Motor_Drive,
-        "Motor_Drive",
-        2048,
-        NULL,
-        1,
-        NULL,
-        app_cpu
-    );
+    xTaskCreatePinnedToCore( Task_Can_Rx, "Can_Rx", 4096, NULL, 3, NULL, app_cpu);
+    xTaskCreatePinnedToCore( Task_Navigation, "Navigation", 4096, NULL, 2, NULL, app_cpu);
+    xTaskCreatePinnedToCore( Task_Motor_Drive, "Motor_Drive", 2048, NULL, 1, NULL, app_cpu);
 
     Serial.println("System Started With Queue-Based Architecture");
 
