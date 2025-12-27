@@ -236,8 +236,8 @@ void Task_Motor_Drive(void* params){
             // 모터 제어
             //바운딩박스 레벨 제어
 
-            motorCmd.out_L -= motorCmd.bbox_size_level * 20;
-            motorCmd.out_R -= motorCmd.bbox_size_level * 20;
+            motorCmd.out_L -= (int16_t)(motorCmd.bbox_size_level * 20);
+            motorCmd.out_R -= (int16_t)(motorCmd.bbox_size_level * 20);
 
             Serial.printf("outL: %d, outR: %d\n", motorCmd.out_L, motorCmd.out_R);
 
