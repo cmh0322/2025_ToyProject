@@ -54,6 +54,7 @@ void loop() {
         uint8_t header = Serial.read();
         int8_t  sx     = (int8_t)Serial.read();
         int8_t  sy     = (int8_t)Serial.read();
+        
 
         txFrame.data[0] = header;
         txFrame.data[1] = sx;

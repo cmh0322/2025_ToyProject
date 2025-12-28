@@ -156,7 +156,7 @@ void Task_Can_Rx(void* params){
 //주행 알고리즘
 void Task_Navigation(void* params){
     SensorData receivedData = {400, 400, 400, 0, false, 0};
-    MotorCommand motorCmd = {0, 0};
+    MotorCommand motorCmd = {0, 0, 0};
     
     while(1){
         // Queue에서 센서 데이터 수신
