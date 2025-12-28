@@ -1,3 +1,5 @@
+#테스트용 siyuong2.py임
+
 import cv2
 import numpy as np
 from tflite_runtime.interpreter import Interpreter

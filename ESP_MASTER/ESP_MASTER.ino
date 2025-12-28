@@ -54,11 +54,12 @@ void loop() {
         uint8_t header = Serial.read();
         int8_t  sx     = (int8_t)Serial.read();
         int8_t  sy     = (int8_t)Serial.read();
-        
+        uint8_t bbox_size_level = (uint8_t)Serial.read();
 
         txFrame.data[0] = header;
         txFrame.data[1] = sx;
         txFrame.data[2] = sy;
+        txFrame.data[3] = bbox_size_level;
 
         MCP2515::ERROR txErr = mcp2515.sendMessage(&txFrame);
         if (txErr == MCP2515::ERROR_OK) {
@@ -68,6 +69,8 @@ void loop() {
             Serial.print((int8_t)txFrame.data[1]);
             Serial.print(", sy=");
             Serial.println(txFrame.data[2]);
+            Serial.print(", bbox_size_level=");
+            Serial.println(txFrame.data[3]);
         } else {
             Serial.print("[MASTER] CAN send ERROR: ");
             Serial.println(txErr);
