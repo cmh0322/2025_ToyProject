@@ -123,7 +123,7 @@ void Task_Can_Rx(void* params){
             
             if(rxFrame.can_id == 0x123){ // 카메라 데이터
                 
-                Serial.printf("[@MASTER]ID: %x, Header: %d, sx: %d, bboxLevel: %d\n", rxFrame.can_id, (int8_t)rxFrame.data[0], (int8_t)rxFrame.data[1], (uint8+_t)rxFrame.data[2]);
+                Serial.printf("[@MASTER]ID: %x, Header: %d, sx: %d, bboxLevel: %d\n", rxFrame.can_id, (int8_t)rxFrame.data[0], (int8_t)rxFrame.data[1], (uint8_t)rxFrame.data[2]);
 
                 bool is_detected = (rxFrame.data[0] == 1);
                 localData.detected = is_detected;
@@ -218,6 +218,7 @@ void Task_Navigation(void* params){
             // float → int16_t 변환 (이미 ±255 범위로 제한되어 안전)
             motorCmd.out_L = (int16_t)out_L;
             motorCmd.out_R = (int16_t)out_R;
+            motorCmd.bbox_size_level = bbox_level;
             Serial.printf("outL: %d, outR: %d\n", 
             motorCmd.out_L, motorCmd.out_R);
             xQueueSend(xQueueMotorCommand, &motorCmd, 0);
@@ -230,7 +231,6 @@ void Task_Motor_Drive(void* params){
     MotorCommand motorCmd = {0, 0, 0};  // 초기값 명시
     
     while(1){
-      // Serial.println("Motor");
         // Queue에서 모터 명령 수신
         if(xQueueReceive(xQueueMotorCommand, &motorCmd, portMAX_DELAY) == pdTRUE){
             // 모터 제어
